@@ -1,0 +1,46 @@
+vmType: qemu
+
+cpus: 4
+memory: "16GiB"
+disk: "30GiB"
+
+images:
+  - location: "https://cloud-images.ubuntu.com/releases/24.04/release/ubuntu-24.04-server-cloudimg-amd64.img"
+    arch: "x86_64"
+
+mounts:
+  - location: "~/devsecopslabs"
+    mountPoint: "/opt/devsecopslabs"
+    writable: false
+
+containerd:
+  system: false
+  user: false
+
+provision:
+  - mode: system
+    script: |
+      #!/bin/bash
+      set -eux
+
+      # Base VM dependencies
+      apt-get update
+
+      apt-get install -y \
+        curl \
+        wget \
+        ca-certificates \
+        docker.io \
+        nmap
+
+      # Docker
+
+      systemctl enable --now docker
+
+      usermod -aG docker {{.User}}
+
+      # Install lab tooling
+      bash /opt/devsecopslabs/host/vm/tools-install.sh
+
+      runuser -u {{.User}} -- \
+        bash /opt/devsecopslabs/clusters/minikube-provision.sh
